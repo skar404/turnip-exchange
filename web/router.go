@@ -1,10 +1,15 @@
 package web
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	"github.com/skar404/turnip-exchange/handlers"
 	"github.com/skar404/turnip-exchange/utils"
@@ -51,6 +56,29 @@ func (c *Config) Run() {
 	room.GET("room/:id", handlers.GetRoomById)
 	room.POST("room", handlers.CreateRoom)
 	room.PATCH("room/:id", handlers.UpdateRoom)
+
+	ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017").SetMaxPoolSize(20))
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
+	err = client.Ping(ctx, readpref.Primary())
+
+	a := func(c *mongo.Client) {
+		err = client.Ping(nil, nil)
+		if err != nil {
+			fmt.Print(err)
+		}
+	}
+
+	for true {
+
+		a(client)
+
+		//time.Sleep(1 * time.Second)
+
+		//fmt.Print("start")
+	}
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%v", c.Host, c.Port)))
 }
